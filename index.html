@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -75,4 +76,329 @@
             background: #f8f9ff;
         }
 
-        tr:nth-child(eve
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .highlight {
+            background: linear-gradient(45deg, #fff9c4, #ffd54f) !important;
+            font-weight: bold;
+        }
+
+        .step {
+            margin: 1.2em 0;
+            padding: 20px;
+            background: white;
+            border-left: 5px solid #3498db;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .tip {
+            background: #e8f5e9 !important;
+            border-left-color: #27ae60 !important;
+        }
+
+        .warning {
+            background: #fff3cd !important;
+            border-left-color: #ffc107 !important;
+        }
+
+        ul, ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+
+        li {
+            margin: 0.7em 0;
+        }
+
+        .emoji {
+            font-size: 1.3em;
+            margin-right: 0.5em;
+        }
+
+        .center {
+            text-align: center;
+            margin: 2em 0;
+        }
+
+        .video-btn {
+            display: inline-block;
+            padding: 18px 40px;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(231,76,60,0.3);
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+        }
+
+        .video-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(231,76,60,0.4);
+        }
+
+        footer {
+            margin-top: 3em;
+            padding: 25px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            table {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+            .video-btn {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.6em;
+                padding: 15px;
+            }
+            h2 {
+                font-size: 1.3em;
+            }
+            table {
+                font-size: 0.8em;
+            }
+            th, td {
+                padding: 10px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1><span class="emoji">🍚</span>MEAL PREP CEREALI<br><small>5gg Lavorativi | Dieta "PORZIONI" | 10 Porzioni per Cereale</small></h1>
+
+    <h2><span class="emoji">📊</span>Tabella Cereali - Riepilogo</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Cereale</th>
+                <th>Porzioni</th>
+                <th>g Crudi (20g/porz)</th>
+                <th>g Cotti</th>
+                <th>Rapporto Acqua</th>
+                <th>Tempo</th>
+                <th>Metodo Cottura (Video)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Quinoa</strong></td>
+                <td>10</td>
+                <td>200g</td>
+                <td>600g</td>
+                <td>1:1.5</td>
+                <td>12 min</td>
+                <td>Lavare + 1 parte quinoa + 1,5 acqua → bollore → fiamma bassa 12 min coperto</td>
+            </tr>
+            <tr>
+                <td><strong>Farro</strong></td>
+                <td>10</td>
+                <td>200g</td>
+                <td>600g</td>
+                <td>conf.</td>
+                <td>15-20 min</td>
+                <td>Seguire istruzioni confezione, bollire fino a cottura</td>
+            </tr>
+            <tr>
+                <td><strong>Couscous</strong></td>
+                <td>10</td>
+                <td>200g</td>
+                <td>400g</td>
+                <td>1:1</td>
+                <td>10 min</td>
+                <td>Mezzo bicchiere couscous + mezzo acqua bollente → coprire piatto 10 min</td>
+            </tr>
+            <tr>
+                <td><strong>Riso (integrale/Venere)</strong></td>
+                <td>10</td>
+                <td>200g</td>
+                <td>600g</td>
+                <td>1:2</td>
+                <td>15 min</td>
+                <td>1 parte riso + 2 acqua fredda → bollore → fiamma bassa 15 min coperto</td>
+            </tr>
+            <tr class="highlight">
+                <td><strong><span class="emoji">📦</span>TOTALE</strong></td>
+                <td><strong>40</strong></td>
+                <td><strong>800g crudi</strong></td>
+                <td><strong>~2200g</strong></td>
+                <td>-</td>
+                <td><strong>40-50 min</strong></td>
+                <td><strong>IN PARALLELO</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2><span class="emoji">🔥</span>Procedura Cottura - Timeline 40-50 minuti</h2>
+
+    <div class="step">
+        <h3><span class="emoji">⏱️</span>Minuto 0 - INIZIO</h3>
+        <ol>
+            <li>Metti pentola grande con acqua a bollire per <strong>Farro</strong> (tempo maggiore)</li>
+            <li>Accendi timer: <strong>15-20 min</strong></li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h3>Minuto 2-3</h3>
+        <ol start="3">
+            <li>Pentola 2 con acqua a bollire per <strong>Riso</strong></li>
+            <li>Lava <strong>Quinoa</strong> sotto acqua corrente in colino</li>
+            <li>Accendi timer Riso: <strong>15 min</strong></li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h3>Minuto 5-6</h3>
+        <ol start="6">
+            <li><strong>Quinoa</strong> in padella (1 parte quinoa + 1,5 acqua fredda)</li>
+            <li>Porta a bollore, abbassa fiamma, copri con coperchio</li>
+            <li>Accendi timer: <strong>12 min</strong></li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h3>Minuto 8-9</h3>
+        <ol start="9">
+            <li><strong>Couscous</strong> in ciotola</li>
+            <li>Riscalda mezzo bicchiere acqua in bollitore</li>
+            <li>Versa acqua bollente nel couscous</li>
+            <li>Copri con piatto</li>
+            <li>Accendi timer: <strong>10 min</strong></li>
+        </ol>
+    </div>
+
+    <div class="tip">
+        <h3><span class="emoji">💡</span>Minuto 10-12 - Controllo</h3>
+        <p>Controlla che Farro e Riso bollono regolarmente. Mescola se necessario. Mantieni fiamma bassa.</p>
+    </div>
+
+    <h2><span class="emoji">📦</span>Conservazione & Utilizzo</h2>
+    <ul>
+        <li><strong>Frigorifero</strong>: 5 giorni (0-4°C), contenitori ermetici etichettati</li>
+        <li><strong>Porzione cotta</strong>: 60-80g (equivalente 20g crudi)</li>
+        <li><strong>Riscaldamento Microonde</strong>: 1-2 min a potenza media</li>
+        <li><strong>Riscaldamento Padella</strong>: Aggiungi 1-2 cucchiai acqua, copri, 2-3 min fuoco medio</li>
+        <li><strong>Freddo OK</strong>: Come insalata con verdure e proteine</li>
+    </ul>
+
+    <h2><span class="emoji">📅</span>Esempio Utilizzo - Giorno di RIPOSO (7 porzioni)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Pasto</th>
+                <th>Cereale</th>
+                <th>Porzioni</th>
+                <th>g Cotti</th>
+                <th>Accompagnamento</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Colazione</strong></td>
+                <td>Quinoa</td>
+                <td>1</td>
+                <td>60g</td>
+                <td>Yogurt greco + frutta fresca</td>
+            </tr>
+            <tr>
+                <td>Spuntino 1</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>Frutta + mandorle</td>
+            </tr>
+            <tr>
+                <td><strong>Pranzo</strong></td>
+                <td>Farro</td>
+                <td>3</td>
+                <td>180g</td>
+                <td>Petto pollo 80g + verdure libere + olio EVO 10g</td>
+            </tr>
+            <tr>
+                <td>Spuntino 2</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>Frutta + noci</td>
+            </tr>
+            <tr>
+                <td><strong>Cena</strong></td>
+                <td>Riso Venere</td>
+                <td>3</td>
+                <td>180g</td>
+                <td>Tofu marinato + spinaci + olio EVO 10g</td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>TOTALE</strong></td>
+                <td>-</td>
+                <td><strong>7</strong></td>
+                <td><strong>~420g</strong></td>
+                <td>140g carb | 100g prot | 60g fat</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2><span class="emoji">💡</span>Consigli PRO</h2>
+    <ul>
+        <li><strong>✅ Parallelizzazione</strong>: Cuoci tutto insieme → tempo ridotto</li>
+        <li><strong>✅ Acqua fredda per Riso</strong>: Evita amido in eccesso (riso meno appiccicaticcio)</li>
+        <li><strong>✅ Lavare Quinoa</strong>: Rimuove saponine amare, digestione migliore</li>
+        <li><strong>✅ Couscous veloce</strong>: Puoi farlo al momento (5 min) se fretta</li>
+        <li><strong>✅ Controllo cottura</strong>: Assaggia a fine timer, aggiungi 1-2 min se non cotto</li>
+        <li><strong>✅ Prep verdure mentre cuoci</strong>: Usa tempo attesa per prep pinzimonio e friggitrice aria</li>
+    </ul>
+
+    <h2><span class="emoji">🥗</span>Abbinamenti Consigliati (dal video meal prep)</h2>
+    <ul>
+        <li><strong>1️⃣ Bowl Farro + Zucchine al Curry + Feta</strong></li>
+        <li><strong>2️⃣ Bowl Quinoa + Verdure Friggitrice + Tofu Marinato + Salsa Yogurt</strong></li>
+        <li><strong>3️⃣ Bowl Couscous + Salmone + Zucchine Friggitrice + Salsa Yogurt</strong></li>
+        <li><strong>4️⃣ Bowl Riso + Dahl Lenticchie Rosse + Salsa Yogurt</strong></li>
+    </ul>
+
+    <h2><span class="emoji">📝</span>Note Personali - Piano Dieta PORZIONI</h2>
+    <ul>
+        <li><strong>BMR</strong>: 1435 kcal | <strong>FFM</strong>: 50 kg</li>
+        <li><strong>Carboidrati totali/giorno</strong>: 7 porzioni = 140g crudi (40% kcal per 1500 kcal target)</li>
+        <li><strong>Giorni riposo</strong>: Riduci 20% porzioni o abbina a legumi (lenticchie rosse, dahl)</li>
+        <li><strong>Giorni allenamento</strong>: Mantieni porzioni intere, distribuisci nei 5 pasti</li>
+        <li><strong>Verdure</strong>: Carote 140g + ravanelli 60g + finocchi 100g in pinzimonio (freddo, croccante)</li>
+        <li><strong>Proteine</strong>: Alternanza feta/salmone (2-3 volte/sett) + tofu/frittata spinaci/ricotta (fisso)</li>
+    </ul>
+
+    <div class="center">
+        <h2><span class="emoji">🎥</span>Video Riferimento</h2>
+        <p><strong>"Meal Prep: 10 pasti sani in 1 Ora"</strong> - Cotto al Dente<br>Preparazione: 00:46 - 09:31 (Cereali, verdure, proteine)</p>
+        <a href="https://youtu.be/PZEnZyNT9G8?si=nkq9vA33dPqS8Vso" target="_blank" class="video-btn">
+            📺 Guarda Video Meal Prep su YouTube
+        </a>
+    </div>
+
+    <footer>
+        <p><strong>Generato per Dieta-PORZIONI</strong> | 5gg lavorativi | <em>Print Friendly • Mobile Responsive</em></p>
+        <p style="margin-top: 10px;">💪 Buona preparazione!</p>
+    </footer>
+</body>
+</html>
