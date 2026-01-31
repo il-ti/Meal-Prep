@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meal Tracker Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style> /* Stile Meal Planner */ body{font-family:Arial;} .pasto{ border:1px solid #ccc; margin:10px; padding:10px; } </style>
+</head>
+<body>
+    <h1>Meal Tracker (Open Food Facts)</h1>
+    <select id="tipoGiorno">
+        <option>Riposo (5P 6F 7C)</option>
+        <option>Mattina</option>
+        <option>Sera</option>
+    </select>
+    <input id="inputPasto" placeholder="es: 150g petto pollo, 200g broccoli" style="width:300px;">
+    <button onclick="aggiungiPasto()">Aggiungi Pasto</button>
+    <div id="listaPasti"></div>
+    <canvas id="chartMacro" width="300" height="300"></canvas>
+    <button onclick="share()">Share WhatsApp</button>
+
+    <script>
+        let pasti = JSON.parse(localStorage.getItem('pasti') || '[]');
+        let target = {prot:5, fat:6, carb:7}; // Porzioni default riposo
+
+        document.getElementById('tipoGiorno').onchange = function() {
+            // Aggiorna target per tipo [cite:3]
+            if(this.value.includes('Riposo')) target = {prot:5, fat:6, carb:7};
+            aggiornaUI();
+        };
+
+        async function aggiungiPasto() {
+            const query = document.getElementById('inputPasto').value;
+            const alimenti = query.split(',').map(s => s.trim()); // Split per alimento
+            let totale = {kcal:0, prot_g:0, fat_g:0, carb_g:0};
+
+            for(let alimento of alimenti) {
+                const grams = parseFloat(alimento.match(/(\d+)g/)?.[1] || 100);
+                const nome = alimento.replace(/ \d+g.*/, '').toLowerCase();
+                try {
+                    const res = await fetch(`https://world.openfoodfacts.org/api/v0/search?search=${encodeURIComponent(nome)}&fields=nutriments&json=1`);
+                    const data = await res.json();
+                    if(data.products?.[0]?.nutriments) {
+                        const n = data.products[0].nutriments;
+                        totale.kcal += (n['energy-kcal_100g'] || 0) * (grams/100);
+                        totale.prot_g += (n.proteins_100g || 0) * (grams/100);
+                        totale.fat_g += (n.fat_100g || 0) * (grams/100);
+                        totale.carb_g += (n.carbohydrates_100g || 0) * (grams/100);
+                    }
+                } catch(e) { console.error('API error'); }
+            }
+
+            // Converti g → porzioni (es. 1 prot=30g)
+            const porz = {
+                prot: Math.round(totale.prot_g / 30 * 10)/10,
+                fat: Math.round(totale.fat_g / 12 * 10)/10, // Assumi 12g fat/porz
+                carb: Math.round(totale.carb_g / 30 * 10)/10  // 30g carb/porz
+            };
+            pasti.push({query, totale, porz, time: new Date().toLocaleTimeString()});
+            localStorage.setItem('pasti', JSON.stringify(pasti));
+            aggiornaUI();
+            document.getElementById('inputPasto').value = '';
+        }
+
+        function aggiornaUI() {
+            const lista = document.getElementById('listaPasti');
+            let sumPorz = {prot:0, fat:0, carb:0};
+            lista.innerHTML = pasti.map(p => 
+                `<div class="pasto"> ${p.time}: ${p.query} → ${p.totale.kcal|0}kcal | 🥚${p.porz.prot}P 🥑${p.porz.fat}F 🌾${p.porz.carb}C </div>`
+            ).join('') + `<h3>Totale: 🥚${sumPorz.prot=target.prot?'✅':'❌'} ${sumPorz.fat=target.fat?'✅':'❌'} ${sumPorz.carb=target.carb?'✅':'❌'}</h3>`;
+            
+            // Chart
+            const ctx = document.getElementById('chartMacro').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Prot', 'Fat', 'Carb'],
+                    datasets: [{ data: [sumPorz.prot, sumPorz.fat, sumPorz.carb], backgroundColor: ['green','yellow','blue'] }]
+                }
+            });
+        }
+
+        function share() {
+            const testo = 'Meal Tracker: ' + JSON.stringify(pasti, null, 2);
+            window.open(`https://wa.me/?text=${encodeURIComponent(testo)}`);
+        }
+
+        aggiornaUI(); // Init
+    </script>
+</body>
+</html>
