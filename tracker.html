@@ -3,90 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Meal Tracker Pro</title>
+    <title>Meal Tracker Pro v2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style> /* Stile Meal Planner */ body{font-family:Arial;} .pasto{ border:1px solid #ccc; margin:10px; padding:10px; } </style>
+    <style> body{font-family:Arial;} .pasto{ border:1px solid #ccc; margin:10px; padding:10px; background:#f9f9f9; } .error{color:red;} </style>
 </head>
 <body>
-    <h1>Meal Tracker (Open Food Facts)</h1>
+    <h1>Meal Tracker Pro v2 (OFF + Fallback)</h1>
     <select id="tipoGiorno">
         <option>Riposo (5P 6F 7C)</option>
-        <option>Mattina</option>
+        <option>Mattina (6P 5F 8C)</option> <!-- Esempio vari [cite:3] -->
         <option>Sera</option>
     </select>
-    <input id="inputPasto" placeholder="es: 150g petto pollo, 200g broccoli" style="width:300px;">
+    <input id="inputPasto" placeholder="es: 150g petto di pollo, 200g riso basmati" style="width:300px;">
     <button onclick="aggiungiPasto()">Aggiungi Pasto</button>
     <div id="listaPasti"></div>
     <canvas id="chartMacro" width="300" height="300"></canvas>
+    <button onclick="resetGiorno()">Reset Giorno</button>
     <button onclick="share()">Share WhatsApp</button>
 
     <script>
         let pasti = JSON.parse(localStorage.getItem('pasti') || '[]');
-        let target = {prot:5, fat:6, carb:7}; // Porzioni default riposo
+        let target = {prot:5, fat:6, carb:7, prot_g_per_porz:30, fat_g_per_porz:12, carb_g_per_porz:30}; // Customizzabile
+
+        // Fallback manuale tuoi cibi comuni [cite:9]
+        const fallbackData = {
+            'petto di pollo': {kcal100:110, prot:23, fat:1.5, carb:0},
+            'riso basmati': {kcal100:350, prot:7, fat:1, carb:78},
+            'petto pollo': {kcal100:110, prot:23, fat:1.5, carb:0},
+            'riso': {kcal100:350, prot:7, fat:1, carb:78},
+            'sgombro': {kcal100:200, prot:20, fat:13, carb:0},
+            'broccoli': {kcal100:35, prot:3, fat:0.4, carb:5},
+            'olio': {kcal100:900, prot:0, fat:100, carb:0}
+            // Aggiungi altri da ricette Cotto al Dente
+        };
 
         document.getElementById('tipoGiorno').onchange = function() {
-            // Aggiorna target per tipo [cite:3]
-            if(this.value.includes('Riposo')) target = {prot:5, fat:6, carb:7};
+            if(this.value === 'Mattina') target = {prot:6, fat:5, carb:8, ...target};
+            else target = {prot:5, fat:6, carb:7, ...target};
             aggiornaUI();
         };
 
         async function aggiungiPasto() {
             const query = document.getElementById('inputPasto').value;
-            const alimenti = query.split(',').map(s => s.trim()); // Split per alimento
-            let totale = {kcal:0, prot_g:0, fat_g:0, carb_g:0};
+            const alimenti = query.toLowerCase().split(',').map(s => s.trim());
+            let totale = {kcal:0, prot_g:0, fat_g:0, carb_g:0, source:'fallback'};
 
             for(let alimento of alimenti) {
-                const grams = parseFloat(alimento.match(/(\d+)g/)?.[1] || 100);
-                const nome = alimento.replace(/ \d+g.*/, '').toLowerCase();
+                const gramsMatch = alimento.match(/(\d+(?:\.\d+)?)\s*g/);
+                const grams = gramsMatch ? parseFloat(gramsMatch[1]) : 100;
+                let nome = alimento.replace(/ \d+(?:\.\d+)?\s*g.*/, '').trim();
+
+                // Prova OFF con filtri migliori
                 try {
-                    const res = await fetch(`https://world.openfoodfacts.org/api/v0/search?search=${encodeURIComponent(nome)}&fields=nutriments&json=1`);
-                    const data = await res.json();
-                    if(data.products?.[0]?.nutriments) {
-                        const n = data.products[0].nutriments;
+                    let res = await fetch(`https://world.openfoodfacts.org/api/v0/search?search_terms=${encodeURIComponent(nome)}&countries_tags=it,en&nutriscore>0&fields=product_name,nutriments&json=1`);
+                    let data = await res.json();
+                    let n = data.products?.[0]?.nutriments;
+                    if(n && (n['energy-kcal_100g'] || 0) > 0) { // Valido se >0
                         totale.kcal += (n['energy-kcal_100g'] || 0) * (grams/100);
                         totale.prot_g += (n.proteins_100g || 0) * (grams/100);
                         totale.fat_g += (n.fat_100g || 0) * (grams/100);
                         totale.carb_g += (n.carbohydrates_100g || 0) * (grams/100);
+                        totale.source = 'OFF';
+                        continue;
                     }
-                } catch(e) { console.error('API error'); }
+                } catch(e) {}
+
+                // Fallback manuale
+                for(let key in fallbackData) {
+                    if(nome.includes(key)) {
+                        const fd = fallbackData[key];
+                        totale.kcal += fd.kcal100 * (grams/100);
+                        totale.prot_g += fd.prot * (grams/100);
+                        totale.fat_g += fd.fat * (grams/100);
+                        totale.carb_g += fd.carb * (grams/100);
+                        totale.source = 'fallback';
+                        break;
+                    }
+                }
             }
 
-            // Converti g → porzioni (es. 1 prot=30g)
             const porz = {
-                prot: Math.round(totale.prot_g / 30 * 10)/10,
-                fat: Math.round(totale.fat_g / 12 * 10)/10, // Assumi 12g fat/porz
-                carb: Math.round(totale.carb_g / 30 * 10)/10  // 30g carb/porz
+                prot: Math.round(totale.prot_g / target.prot_g_per_porz * 10)/10,
+                fat: Math.round(totale.fat_g / target.fat_g_per_porz * 10)/10,
+                carb: Math.round(totale.carb_g / target.carb_g_per_porz * 10)/10
             };
-            pasti.push({query, totale, porz, time: new Date().toLocaleTimeString()});
+            pasti.push({query, totale: totale.toFixed(0), porz, time: new Date().toLocaleTimeString(), source: totale.source});
             localStorage.setItem('pasti', JSON.stringify(pasti));
-            aggiornaUI();
             document.getElementById('inputPasto').value = '';
+            aggiornaUI();
         }
 
         function aggiornaUI() {
-            const lista = document.getElementById('listaPasti');
-            let sumPorz = {prot:0, fat:0, carb:0};
-            lista.innerHTML = pasti.map(p => 
-                `<div class="pasto"> ${p.time}: ${p.query} → ${p.totale.kcal|0}kcal | 🥚${p.porz.prot}P 🥑${p.porz.fat}F 🌾${p.porz.carb}C </div>`
-            ).join('') + `<h3>Totale: 🥚${sumPorz.prot=target.prot?'✅':'❌'} ${sumPorz.fat=target.fat?'✅':'❌'} ${sumPorz.carb=target.carb?'✅':'❌'}</h3>`;
-            
-            // Chart
+            document.getElementById('listaPasti').innerHTML = '';
+            let sums = {prot:0, fat:0, carb:0, kcal:0};
+            pasti.forEach((p, i) => {
+                sums.prot += p.porz.prot; sums.fat += p.porz.fat; sums.carb += p.porz.carb; sums.kcal += parseFloat(p.totale.kcal);
+                document.getElementById('listaPasti').innerHTML += `
+                    <div class="pasto">
+                        <strong>${p.time}:</strong> ${p.query} → 
+                        <span style="color:${p.source==='OFF'?'green':'orange'}">${p.source}</span> 
+                        ${p.totale.kcal}kcal | 🥚${p.porz.prot}P 🥑${p.porz.fat}F 🌾${p.porz.carb}C
+                        <button onclick="pasti.splice(${i},1);localStorage.setItem('pasti',JSON.stringify(pasti));aggiornaUI()">Del</button>
+                    </div>`;
+            });
+            const status = `Totale: 🥚${sums.prot.toFixed(1)}/${target.prot} ${sums.fat.toFixed(1)}/${target.fat} ${sums.carb.toFixed(1)}/${target.carb} | ${sums.kcal.toFixed(0)}kcal`;
+            document.getElementById('listaPasti').innerHTML += `<h3 style="color:${sums.prot>=target.prot&&sums.fat>=target.fat&&sums.carb>=target.carb?'green':'orange'}">${status}</h3>`;
+
+            // Chart aggiornato
             const ctx = document.getElementById('chartMacro').getContext('2d');
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Prot', 'Fat', 'Carb'],
-                    datasets: [{ data: [sumPorz.prot, sumPorz.fat, sumPorz.carb], backgroundColor: ['green','yellow','blue'] }]
-                }
+            if(window.myChart) window.myChart.destroy();
+            window.myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['Prot', 'Fat', 'Carb'], datasets: [{ data: [sums.prot, sums.fat, sums.carb], backgroundColor: ['#4CAF50','#FF9800','#2196F3'] }] },
+                options: { plugins: { legend: { position: 'bottom' } } }
             });
         }
 
+        function resetGiorno() { pasti = []; localStorage.removeItem('pasti'); aggiornaUI(); }
         function share() {
-            const testo = 'Meal Tracker: ' + JSON.stringify(pasti, null, 2);
+            const sums = {prot:0,fat:0,carb:0,kcal:0}; // Calcola sums...
+            const testo = `Meal Tracker ${new Date().toLocaleDateString('it')}: Totale 🥚${sums.prot}/${target.prot}P 🥑${sums.fat}/${target.fat}F 🌾${sums.carb}/${target.carb}C ${sums.kcal}kcal\n${pasti.map(p=>`${p.time}: ${p.query} [${p.totale.kcal}kcal]`).join('\n')}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(testo)}`);
         }
 
-        aggiornaUI(); // Init
+        aggiornaUI();
     </script>
 </body>
 </html>
