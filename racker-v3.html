@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meal Tracker Pro v3 - Funzionante</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style> body{font-family:Arial; margin:20px;} .pasto{ border:1px solid #ccc; margin:10px 0; padding:15px; background:#f0f8ff; border-radius:8px; } button{ padding:8px 12px; margin:5px; } .error{color:red;font-weight:bold;} .success{color:green;} </style>
+</head>
+<body>
+    <h1>🍽️ Meal Tracker Pro v3</h1>
+    <p><strong>Target porzioni:</strong> <span id="targetDisplay">Riposo: 5P 6F 7C</span></p>
+    <input id="inputPasto" placeholder="150g petto di pollo + 200g riso basmati + 10g olio" style="width:100%; padding:10px; font-size:16px;">
+    <br><button onclick="aggiungiPasto()">➕ Aggiungi Pasto</button> <button onclick="resetGiorno()">🔄 Reset</button>
+    
+    <h2>Pasti del Giorno</h2>
+    <div id="listaPasti"></div>
+    
+    <canvas id="chartMacro" width="400" height="200"></canvas>
+    
+    <h3 id="totaleSummary"></h3>
+    <button onclick="share()">📱 Share WhatsApp</button>
+    <details><summary>Debug Console (F12)</summary><pre id="debug"></pre></details>
+
+    <script>
+        let pasti = JSON.parse(localStorage.getItem(`pasti_${new Date().toDateString()}`) || '[]'); // Giorno-based
+        let targetPorz = {prot:5, fat:6, carb:7}; // Default riposo [cite:3]
+        const G_PER_PORZ = {prot:30, fat:12, carb:30}; // Grammi per porzione
+
+        // Fallback ESPANSO con tuoi cibi Meal Planner/Cotto al Dente [cite:8][cite:9]
+        const FALLBACK = {
+            'petto di pollo': {kcal:110, p:23, f:1.5, c:0},
+            'petto pollo': {kcal:110, p:23, f:1.5, c:0},
+            'pollo': {kcal:110, p:23, f:1.5, c:0},
+            'riso basmati': {kcal:350, p:7, f:1, c:78},
+            'riso': {kcal:350, p:7, f:1, c:78},
+            'farro': {kcal:335, p:14, f:2, c:70},
+            'sgombro': {kcal:200, p:20, f:13, c:0},
+            'feta': {kcal:260, p:14, f:21, c:4},
+            'broccoli': {kcal:35, p:3, f:0.4, c:5},
+            'zucchine': {kcal:17, p:1, f:0.2, c:3},
+            'olio': {kcal:900, p:0, f:100, c:0},
+            'mandorle': {kcal:580, p:21, f:50, c:22},
+            'yogurt greco': {kcal:100, p:10, f:5, c:4},
+            'banana': {kcal:90, p:1, f:0.3, c:23}
+        };
+
+        document.getElementById('inputPasto').addEventListener('keypress', e => { if(e.key==='Enter') aggiungiPasto(); });
+
+        function aggiornaTarget() {
+            document.getElementById('targetDisplay').textContent = `Riposo: 🥚${targetPorz.prot}P 🥑${targetPorz.fat}F 🌾${targetPorz.carb}C`;
+        }
+
+        async function aggiungiPasto() {
+            const input = document.getElementById('inputPasto').value.trim();
+            if(!input) return alert('Inserisci pasto!');
+            log(`Parsing: ${input}`);
+
+            const parti = input.toLowerCase().split(/[\+\,]/).map(s => s.trim());
+            let totale = {kcal:0, prot_g:0, fat_g:0, carb_g:0, source:[]};
+
+            for(let parte of parti) {
+                const gramsMatch = parte.match(/(\d+(?:\.\d+)?)\s*(g|grammi?)/i);
+                const grams = gramsMatch ? parseFloat(gramsMatch[1]) : 100;
+                const nome = parte.replace(/^\d+(?:\.\d+)?\s*(g|grammi?)\s*/i, '').trim();
+
+                log(`- ${parte} → grams:${grams}, nome:'${nome}'`);
+
+                // Fallback (primario, veloce/accurato)
+                let found = false;
+                for(let key in FALLBACK) {
+                    if(nome.includes(key)) {
+                        const fd = FALLBACK[key];
+                        const factor = grams / 100;
+                        totale.kcal += fd.kcal * factor;
+                        totale.prot_g += fd.p * factor;
+                        totale.fat_g += fd.f * factor;
+                        totale.carb_g += fd.c * factor;
+                        totale.source.push(`${key} (fallback)`);
+                        found = true;
+                        break;
+                    }
+                }
+                if(!found) totale.source.push('no match');
+            }
+
+            const porz = {
+                prot: (totale.prot_g / G_PER_PORZ.prot).toFixed(1),
+                fat: (totale.fat_g / G_PER_PORZ.fat).toFixed(1),
+                carb: (totale.carb_g / G_PER_PORZ.carb).toFixed(1)
+            };
+            pasti.push({input, totale: {...totale, kcal:Math.round(totale.kcal)}, porz, time: new Date().toLocaleTimeString('it-IT')});
+            localStorage.setItem(`pasti_${new Date().toDateString()}`, JSON.stringify(pasti));
+            document.getElementById('inputPasto').value = '';
+            aggiornaUI();
+        }
+
+        function aggiornaUI() {
+            const lista = document.getElementById('listaPasti');
+            lista.innerHTML = '';
+            let sums = {prot:0, fat:0, carb:0, kcal:0};
+            pasti.forEach((p, i) => {
+                sums.prot += parseFloat(p.porz.prot);
+                sums.fat += parseFloat(p.porz.fat);
+                sums.carb += parseFloat(p.porz.carb);
+                sums.kcal += p.totale.kcal;
+                lista.innerHTML += `
+                    <div class="pasto">
+                        <strong>${p.time}</strong><br>
+                        ${p.input}<br>
+                        <span class="success">${p.totale.kcal}kcal | 🥚${p.porz.prot}P 🥑${p.porz.fat}F 🌾${p.porz.carb}C</span><br>
+                        <small>${p.totale.source.join(', ')}</small>
+                        <button onclick="pasti.splice(${i},1); localStorage.setItem('pasti_${new Date().toDateString()}', JSON.stringify(pasti)); aggiornaUI();" style="float:right;">🗑️</button>
+                    </div>`;
+            });
+
+            const okProt = sums.prot >= targetPorz.prot - 0.5;
+            const okFat = sums.fat >= targetPorz.fat - 0.5;
+            const okCarb = sums.carb >= targetPorz.carb - 0.5;
+            document.getElementById('totaleSummary').innerHTML = `
+                <span class="${okProt&&okFat&&okCarb ? 'success' : 'error'}">
+                    Totale: 🥚${sums.prot.toFixed(1)}/${targetPorz.prot}P | 🥑${sums.fat.toFixed(1)}/${targetPorz.fat}F | 🌾${sums.carb.toFixed(1)}/${targetPorz.carb}C | 🔥${sums.kcal.toFixed(0)}kcal
+                    ${okProt&&okFat&&okCarb ? '✅ Obiettivo OK!' : '⚠️ Aggiusta!'}
+                </span>`;
+
+            // Chart
+            const ctx = document.getElementById('chartMacro').getContext('2d');
+            if (window.myChart) window.myChart.destroy();
+            window.myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [`Prot ${sums.prot.toFixed(1)}/${targetPorz.prot}`, `Fat ${sums.fat.toFixed(1)}/${targetPorz.fat}`, `Carb ${sums.carb.toFixed(1)}/${targetPorz.carb}`],
+                    datasets: [{
+                        data: [sums.prot, sums.fat, sums.carb],
+                        backgroundColor: [okProt ? '#4CAF50' : '#FF5722', okFat ? '#4CAF50' : '#FF5722', okCarb ? '#4CAF50' : '#FF5722']
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        function resetGiorno() {
+            pasti = [];
+            localStorage.removeItem(`pasti_${new Date().toDateString()}`);
+            aggiornaUI();
+        }
+
+        function share() {
+            let testo = `🍽️ Meal Tracker ${new Date().toLocaleDateString('it-IT')}\n`;
+            testo += document.getElementById('totaleSummary').textContent + '\n\nPasti:\n';
+            pasti.forEach(p => testo += `${p.time}: ${p.input} (${p.totale.kcal}kcal)\n`);
+            window.open(`https://wa.me/?text=${encodeURIComponent(testo)}`, '_blank');
+        }
+
+        function log(msg) {
+            document.getElementById('debug').textContent += `${new Date().toLocaleTimeString()}: ${msg}\n`;
+            console.log(msg);
+        }
+
+        aggiornaTarget();
+        aggiornaUI();
+    </script>
+</body>
+</html>
